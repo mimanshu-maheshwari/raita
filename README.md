@@ -7,4 +7,4 @@
 - https://github.com/jepsen-io/maelstrom/tree/main/doc/01-getting-ready
 - https://github.com/jepsen-io/maelstrom/blob/main/doc/protocol.md
 - https://pkg.go.dev/github.com/jepsen-io/maelstrom/demo/go
-
+- https://github.com/jepsen-io/maelstrom/releases/tag/v0.2.3
