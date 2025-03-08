@@ -1,27 +1,43 @@
-use serde::{Deserialize, Serialize};
-use std::io::{stderr, stdin, stdout, BufRead, Write};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use std::{
+    io::{stderr, stdin, stdout},
+    str::FromStr,
+};
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 struct Message<Payload> {
     src: String,
-    #[serde[rename = "dest"]]
-    dst: String,
+    dest: String,
     body: Body<Payload>,
+}
+
+impl<Payload> FromStr for Message<Payload>
+where
+    Payload: DeserializeOwned,
+{
+    type Err = Box<dyn std::error::Error>;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(serde_json::from_str::<Message<Payload>>(s)?)
+    }
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 struct Body<Payload> {
-    #[serde[rename = "msg_id"]]
-    id: Option<usize>,
-    in_reply_to: Option<usize>,
+    msg_id: Option<usize>,
     #[serde(flatten)]
     payload: Payload,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
-struct Init {
-    node_id: String,
-    node_ids: Vec<String>,
+#[serde(tag = "type", rename_all = "snake_case")]
+enum Init {
+    Init {
+        node_id: String,
+        node_ids: Vec<String>,
+    },
+    InitOk {
+        in_reply_to: usize,
+    },
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
