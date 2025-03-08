@@ -1,5 +1,3 @@
-type Result<RET> = std::result::Result<RET, Box<dyn std::error::Error>>;
-
-fn main() -> Result<()> {
+fn main() -> anyhow::Result<()> {
     Ok(())
 }
