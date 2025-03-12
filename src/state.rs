@@ -2,6 +2,8 @@ use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, Default)]
 pub struct State {
+    node_id: String,
+    declared_nodes: HashSet<String>,
     local_id: usize,
     messages: Vec<u32>,
     topology: HashMap<String, HashSet<String>>,
@@ -40,5 +42,21 @@ impl State {
                 .and_modify(|original_values| *original_values = values.clone())
                 .or_insert(values.to_owned());
         }
+    }
+
+    pub fn node_id(&self) -> &str {
+        &self.node_id
+    }
+
+    pub fn set_node_id(&mut self, node_id: &str) {
+        self.node_id = node_id.to_owned();
+    }
+
+    pub fn declared_nodes(&self) -> &HashSet<String> {
+        &self.declared_nodes
+    }
+
+    pub fn set_declared_nodes(&mut self, declared_nodes: &HashSet<String>) {
+        self.declared_nodes = declared_nodes.to_owned();
     }
 }

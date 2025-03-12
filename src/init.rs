@@ -1,6 +1,6 @@
 use anyhow::bail;
 use serde::{Deserialize, Serialize};
-use std::io::StdoutLock;
+use std::{collections::HashSet, io::StdoutLock};
 
 use crate::{message::Message, state::State, Node};
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -8,7 +8,7 @@ use crate::{message::Message, state::State, Node};
 pub enum InitPayload {
     Init {
         node_id: String,
-        node_ids: Vec<String>,
+        node_ids: HashSet<String>,
     },
     InitOk,
 }
@@ -16,7 +16,9 @@ pub enum InitPayload {
 impl Node<InitPayload> for Message<InitPayload> {
     fn step(&self, writer: &mut StdoutLock, state: &mut State) -> anyhow::Result<()> {
         match self.body().payload() {
-            InitPayload::Init { .. } => {
+            InitPayload::Init { node_id, node_ids } => {
+                state.set_node_id(node_id);
+                state.set_declared_nodes(node_ids);
                 let reply = Message::reply(state, self, InitPayload::InitOk);
                 reply.write(writer)?;
             }
