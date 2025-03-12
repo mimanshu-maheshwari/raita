@@ -24,7 +24,7 @@ pub enum BroadcastPayload {
 
 impl Node<BroadcastPayload> for Message<BroadcastPayload> {
     fn step(&self, writer: &mut StdoutLock, state: &mut State) -> anyhow::Result<()> {
-        match self.body().payload() {
+        match &self.body.payload {
             BroadcastPayload::Broadcast { message } => {
                 state.add_message(*message);
                 let reply = Message::reply(state, self, BroadcastPayload::BroadcastOk);
@@ -35,7 +35,7 @@ impl Node<BroadcastPayload> for Message<BroadcastPayload> {
                     state,
                     self,
                     BroadcastPayload::ReadOk {
-                        messages: state.messages().to_vec(),
+                        messages: state.messages.clone(),
                     },
                 );
                 reply.write(writer)?;

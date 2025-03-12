@@ -12,10 +12,16 @@ pub enum EchoPayload {
 
 impl Node<EchoPayload> for Message<EchoPayload> {
     fn step(&self, writer: &mut StdoutLock, state: &mut State) -> anyhow::Result<()> {
-        match self.body().payload() {
+        match &self.body.payload {
             EchoPayload::Echo { echo } => {
-                let reply = Message::reply(state, self, EchoPayload::EchoOk { echo: echo.clone() });
-                reply.write(writer)?;
+                Message::reply(
+                    state,
+                    self,
+                    EchoPayload::EchoOk {
+                        echo: echo.to_owned(),
+                    },
+                )
+                .write(writer)?;
             }
             EchoPayload::EchoOk { .. } => {}
         }

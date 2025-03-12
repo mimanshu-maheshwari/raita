@@ -15,12 +15,11 @@ pub enum InitPayload {
 
 impl Node<InitPayload> for Message<InitPayload> {
     fn step(&self, writer: &mut StdoutLock, state: &mut State) -> anyhow::Result<()> {
-        match self.body().payload() {
+        match &self.body.payload {
             InitPayload::Init { node_id, node_ids } => {
-                state.set_node_id(node_id);
-                state.set_declared_nodes(node_ids);
-                let reply = Message::reply(state, self, InitPayload::InitOk);
-                reply.write(writer)?;
+                state.node_id = node_id.clone();
+                state.declared_nodes = node_ids.clone();
+                Message::reply(state, self, InitPayload::InitOk).write(writer)?;
             }
             InitPayload::InitOk => bail!("Unexpected message Init Ok"),
         }

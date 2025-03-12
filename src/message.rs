@@ -7,10 +7,10 @@ use crate::State;
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Message<Payload> {
     #[serde(rename = "src")]
-    source: String,
+    pub source: String,
     #[serde(rename = "dest")]
-    destination: String,
-    body: Body<Payload>,
+    pub destination: String,
+    pub body: Body<Payload>,
 }
 
 impl<Payload> Message<Payload>
@@ -28,7 +28,7 @@ where
         let body = Body::new(
             Some(state.get_and_increment()),
             payload,
-            request.body().message_id(),
+            request.body.message_id,
         );
         Self {
             source: request.destination.clone(),
@@ -42,27 +42,15 @@ where
         writer.flush()?;
         Ok(())
     }
-
-    pub fn source(&self) -> &str {
-        &self.source
-    }
-
-    pub fn destination(&self) -> &str {
-        &self.destination
-    }
-
-    pub fn body(&self) -> &Body<Payload> {
-        &self.body
-    }
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Body<Payload> {
     #[serde(rename = "msg_id")]
-    message_id: Option<usize>,
+    pub message_id: Option<usize>,
     #[serde(flatten)]
-    payload: Payload,
-    in_reply_to: Option<usize>,
+    pub payload: Payload,
+    pub in_reply_to: Option<usize>,
 }
 
 impl<Payload> Body<Payload>
@@ -75,17 +63,5 @@ where
             payload,
             in_reply_to,
         }
-    }
-
-    pub fn message_id(&self) -> Option<usize> {
-        self.message_id
-    }
-
-    pub fn payload(&self) -> &Payload {
-        &self.payload
-    }
-
-    pub fn in_reply_to(&self) -> Option<usize> {
-        self.in_reply_to
     }
 }

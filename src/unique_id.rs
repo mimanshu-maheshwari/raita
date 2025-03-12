@@ -13,16 +13,16 @@ pub enum UniqueIdPayload {
 
 impl Node<UniqueIdPayload> for Message<UniqueIdPayload> {
     fn step(&self, writer: &mut StdoutLock, state: &mut State) -> anyhow::Result<()> {
-        match self.body().payload() {
+        match self.body.payload {
             UniqueIdPayload::Generate => {
-                let reply = Message::reply(
+                Message::reply(
                     state,
                     self,
                     UniqueIdPayload::GenerateOk {
                         id: ulid::Ulid::new(),
                     },
-                );
-                reply.write(writer)?;
+                )
+                .write(writer)?;
             }
             UniqueIdPayload::GenerateOk { .. } => bail!("Recieved generated ok"),
         }
