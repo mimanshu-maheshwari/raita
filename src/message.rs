@@ -1,4 +1,6 @@
-use serde::{Deserialize, Serialize};
+use std::io::{StdoutLock, Write};
+
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Message<Payload> {
@@ -9,7 +11,10 @@ pub struct Message<Payload> {
     body: Body<Payload>,
 }
 
-impl<Payload> Message<Payload> {
+impl<Payload> Message<Payload>
+where
+    Payload: DeserializeOwned + Serialize,
+{
     pub fn new(source: String, destination: String, body: Body<Payload>) -> Self {
         Self {
             source,
@@ -23,6 +28,12 @@ impl<Payload> Message<Payload> {
             destination: request.source.clone(),
             body,
         }
+    }
+    pub fn write(&self, writer: &mut StdoutLock) -> anyhow::Result<()> {
+        serde_json::to_writer(&mut *writer, self)?;
+        writer.write_all(b"\r")?;
+        writer.flush()?;
+        Ok(())
     }
 
     pub fn source(&self) -> &str {
@@ -46,7 +57,10 @@ pub struct Body<Payload> {
     payload: Payload,
 }
 
-impl<Payload> Body<Payload> {
+impl<Payload> Body<Payload>
+where
+    Payload: DeserializeOwned + Serialize,
+{
     pub fn new(message_id: Option<usize>, payload: Payload) -> Self {
         Self {
             message_id,

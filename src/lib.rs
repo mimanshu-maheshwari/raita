@@ -7,7 +7,7 @@ mod unique_id;
 
 use init::InitPayload;
 use message::Message;
-use serde::de::DeserializeOwned;
+use serde::{de::DeserializeOwned, Serialize};
 use std::io::{stdin, stdout, BufRead, BufReader, StdoutLock};
 
 pub use broadcast::BroadcastPayload;
@@ -15,13 +15,16 @@ pub use echo::EchoPayload;
 pub use state::State;
 pub use unique_id::UniqueIdPayload;
 
-pub trait Node<Payload> {
+pub trait Node<Payload>
+where
+    Payload: DeserializeOwned + Serialize,
+{
     fn step(&self, writer: &mut StdoutLock, state: &mut State) -> anyhow::Result<()>;
 }
 
 pub fn main_loop<Payload>(mut state: State) -> anyhow::Result<()>
 where
-    Payload: Sized + DeserializeOwned,
+    Payload: Sized + DeserializeOwned + Serialize,
     Message<Payload>: Node<Payload>,
 {
     let stdin = stdin().lock();

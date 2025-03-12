@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::io::{StdoutLock, Write};
+use std::io::StdoutLock;
 
 use crate::{
     message::{Body, Message},
@@ -33,9 +33,7 @@ impl Node<EchoPayload> for Message<EchoPayload> {
                         },
                     ),
                 );
-                serde_json::to_writer(&mut *writer, &reply)?;
-                writer.write_all(b"\r")?;
-                writer.flush()?;
+                reply.write(writer)?;
             }
             EchoPayload::EchoOk { .. } => {}
         }

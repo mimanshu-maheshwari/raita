@@ -1,6 +1,6 @@
 use anyhow::bail;
 use serde::{Deserialize, Serialize};
-use std::io::{StdoutLock, Write};
+use std::io::StdoutLock;
 
 use crate::{
     message::{Body, Message},
@@ -32,9 +32,7 @@ impl Node<UniqueIdPayload> for Message<UniqueIdPayload> {
                         },
                     ),
                 );
-                serde_json::to_writer(&mut *writer, &reply)?;
-                writer.write_all(b"\r")?;
-                writer.flush()?;
+                reply.write(writer)?;
             }
             UniqueIdPayload::GenerateOk { .. } => bail!("Recieved generated ok"),
         }
