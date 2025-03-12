@@ -10,7 +10,7 @@ br = "build --release"
 rr = "run --release"
 tr = "test --release"
 rm = "remove"
-clippy = "clippy"
+clpy = "clippy"
 
 # .cargo/config.toml
 

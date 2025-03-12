@@ -27,7 +27,7 @@ impl Node<EchoPayload> for Message<EchoPayload> {
         match self.body().payload() {
             EchoPayload::Echo { echo } => {
                 let reply = Message::reply(
-                    &self,
+                    self,
                     Body::new(
                         self.body().message_id(),
                         EchoPayload::EchoOk {

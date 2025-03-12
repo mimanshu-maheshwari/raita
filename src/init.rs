@@ -27,7 +27,7 @@ impl Node<InitPayload> for Message<InitPayload> {
         match self.body().payload() {
             InitPayload::Init { .. } => {
                 let reply = Message::reply(
-                    &self,
+                    self,
                     Body::new(
                         self.body().message_id(),
                         InitPayload::InitOk {
