@@ -28,8 +28,8 @@ where
         if bytes == 0 {
             break;
         }
-        let echo_message: Message<Payload> = serde_json::from_str(&input_buffer)?;
-        echo_message.step(&mut stdout)?;
+        let message: Message<Payload> = serde_json::from_str(&input_buffer)?;
+        message.step(&mut stdout)?;
         input_buffer.clear();
     }
     Ok(())

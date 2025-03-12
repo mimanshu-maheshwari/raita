@@ -37,6 +37,7 @@ impl Node<InitPayload> for Message<InitPayload> {
                 );
                 serde_json::to_writer(&mut *writer, &reply)?;
                 writer.write_all(b"\r")?;
+                writer.flush()?;
             }
             InitPayload::InitOk { .. } => bail!("Unexpected message Init Ok"),
         }
