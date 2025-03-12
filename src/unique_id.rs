@@ -14,7 +14,7 @@ pub enum UniqueIdPayload {
     Generate,
     GenerateOk {
         in_reply_to: Option<usize>,
-        id: u128,
+        id: ulid::Ulid,
     },
 }
 
@@ -28,7 +28,7 @@ impl Node<UniqueIdPayload> for Message<UniqueIdPayload> {
                         Some(state.get_and_increment()),
                         UniqueIdPayload::GenerateOk {
                             in_reply_to: self.body().message_id(),
-                            id: ulid::Ulid::new().0,
+                            id: ulid::Ulid::new(),
                         },
                     ),
                 );
