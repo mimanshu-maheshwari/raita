@@ -30,7 +30,6 @@ impl Node<BroadcastPayload> for Message<BroadcastPayload> {
                 let reply = Message::reply(state, self, BroadcastPayload::BroadcastOk);
                 reply.write(writer)?;
             }
-            BroadcastPayload::BroadcastOk => {}
             BroadcastPayload::Read => {
                 let reply = Message::reply(
                     state,
@@ -41,13 +40,14 @@ impl Node<BroadcastPayload> for Message<BroadcastPayload> {
                 );
                 reply.write(writer)?;
             }
-            BroadcastPayload::ReadOk { .. } => {}
             BroadcastPayload::Topology { topology } => {
                 state.update_topology(topology);
                 let reply = Message::reply(state, self, BroadcastPayload::TopologyOk);
                 reply.write(writer)?;
             }
-            BroadcastPayload::TopologyOk => {}
+            BroadcastPayload::BroadcastOk
+            | BroadcastPayload::ReadOk { .. }
+            | BroadcastPayload::TopologyOk => {}
         }
         Ok(())
     }
