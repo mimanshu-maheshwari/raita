@@ -1,3 +1,4 @@
+use crate::Node;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -9,6 +10,35 @@ pub struct Message<Payload> {
     body: Body<Payload>,
 }
 
+impl<Payload> Message<Payload> {
+    pub fn new(source: String, destination: String, body: Body<Payload>) -> Self {
+        Self {
+            source,
+            destination,
+            body,
+        }
+    }
+    pub fn reply(request: &Message<Payload>, body: Body<Payload>) -> Self {
+        Self {
+            source: request.destination.clone(),
+            destination: request.source.clone(),
+            body,
+        }
+    }
+
+    pub fn source(&self) -> &str {
+        &self.source
+    }
+
+    pub fn destination(&self) -> &str {
+        &self.destination
+    }
+
+    pub fn body(&self) -> &Body<Payload> {
+        &self.body
+    }
+}
+
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Body<Payload> {
     #[serde(rename = "msg_id")]
@@ -17,14 +47,19 @@ pub struct Body<Payload> {
     payload: Payload,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
-#[serde(tag = "type", rename_all = "snake_case")]
-enum Echo {
-    Echo {
-        echo: String,
-    },
-    EchoOk {
-        echo: String,
-        in_reply_to: Option<usize>,
-    },
+impl<Payload> Body<Payload> {
+    pub fn new(message_id: Option<usize>, payload: Payload) -> Self {
+        Self {
+            message_id,
+            payload,
+        }
+    }
+
+    pub fn message_id(&self) -> Option<usize> {
+        self.message_id
+    }
+
+    pub fn payload(&self) -> &Payload {
+        &self.payload
+    }
 }
