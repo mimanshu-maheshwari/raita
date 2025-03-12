@@ -2,6 +2,8 @@ use std::io::{StdoutLock, Write};
 
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
+use crate::State;
+
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Message<Payload> {
     #[serde(rename = "src")]
@@ -22,7 +24,12 @@ where
             body,
         }
     }
-    pub fn reply(request: &Message<Payload>, body: Body<Payload>) -> Self {
+    pub fn reply(state: &mut State, request: &Message<Payload>, payload: Payload) -> Self {
+        let body = Body::new(
+            Some(state.get_and_increment()),
+            payload,
+            request.body().message_id(),
+        );
         Self {
             source: request.destination.clone(),
             destination: request.source.clone(),
@@ -55,16 +62,18 @@ pub struct Body<Payload> {
     message_id: Option<usize>,
     #[serde(flatten)]
     payload: Payload,
+    in_reply_to: Option<usize>,
 }
 
 impl<Payload> Body<Payload>
 where
     Payload: DeserializeOwned + Serialize,
 {
-    pub fn new(message_id: Option<usize>, payload: Payload) -> Self {
+    pub fn new(message_id: Option<usize>, payload: Payload, in_reply_to: Option<usize>) -> Self {
         Self {
             message_id,
             payload,
+            in_reply_to,
         }
     }
 
@@ -74,5 +83,9 @@ where
 
     pub fn payload(&self) -> &Payload {
         &self.payload
+    }
+
+    pub fn in_reply_to(&self) -> Option<usize> {
+        self.in_reply_to
     }
 }
