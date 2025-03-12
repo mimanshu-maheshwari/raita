@@ -17,6 +17,7 @@ impl<Payload> Message<Payload>
 where
     Payload: DeserializeOwned + Serialize,
 {
+    #[inline(always)]
     pub fn new(source: String, destination: String, body: Body<Payload>) -> Self {
         Self {
             source,
@@ -24,6 +25,7 @@ where
             body,
         }
     }
+    #[inline(always)]
     pub fn reply(state: &mut State, request: &Message<Payload>, payload: Payload) -> Self {
         let body = Body::new(
             Some(state.get_and_increment()),
@@ -36,6 +38,7 @@ where
             body,
         }
     }
+    #[inline(always)]
     pub fn write(&self, writer: &mut StdoutLock) -> anyhow::Result<()> {
         serde_json::to_writer(&mut *writer, self)?;
         writer.write_all(b"\r")?;
@@ -57,6 +60,7 @@ impl<Payload> Body<Payload>
 where
     Payload: DeserializeOwned + Serialize,
 {
+    #[inline(always)]
     pub fn new(message_id: Option<usize>, payload: Payload, in_reply_to: Option<usize>) -> Self {
         Self {
             message_id,

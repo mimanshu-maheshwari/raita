@@ -22,6 +22,7 @@ where
     fn step(&self, writer: &mut StdoutLock, state: &mut State) -> anyhow::Result<()>;
 }
 
+#[inline(always)]
 pub fn main_loop<Payload>(mut state: State) -> anyhow::Result<()>
 where
     Payload: Sized + DeserializeOwned + Serialize,
