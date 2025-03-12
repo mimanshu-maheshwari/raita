@@ -20,12 +20,7 @@ pub enum EchoPayload {
 }
 
 impl Node<EchoPayload> for Message<EchoPayload> {
-    fn step(
-        &self,
-        // input: &mut Message<EchoPayload>,
-        writer: &mut StdoutLock,
-        state: &mut State,
-    ) -> anyhow::Result<()> {
+    fn step(&self, writer: &mut StdoutLock, state: &mut State) -> anyhow::Result<()> {
         match self.body().payload() {
             EchoPayload::Echo { echo } => {
                 let reply = Message::reply(

@@ -7,28 +7,28 @@ use crate::{
     state::State,
     Node,
 };
+
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
-pub enum InitPayload {
-    Init {
-        node_id: String,
-        node_ids: Vec<String>,
-    },
-    InitOk {
+pub enum UniqueIdPayload {
+    Generate,
+    GenerateOk {
         in_reply_to: Option<usize>,
+        id: u128,
     },
 }
 
-impl Node<InitPayload> for Message<InitPayload> {
+impl Node<UniqueIdPayload> for Message<UniqueIdPayload> {
     fn step(&self, writer: &mut StdoutLock, state: &mut State) -> anyhow::Result<()> {
         match self.body().payload() {
-            InitPayload::Init { .. } => {
+            UniqueIdPayload::Generate => {
                 let reply = Message::reply(
                     self,
                     Body::new(
                         Some(state.get_and_increment()),
-                        InitPayload::InitOk {
+                        UniqueIdPayload::GenerateOk {
                             in_reply_to: self.body().message_id(),
+                            id: ulid::Ulid::new().0,
                         },
                     ),
                 );
@@ -36,7 +36,7 @@ impl Node<InitPayload> for Message<InitPayload> {
                 writer.write_all(b"\r")?;
                 writer.flush()?;
             }
-            InitPayload::InitOk { .. } => bail!("Unexpected message Init Ok"),
+            UniqueIdPayload::GenerateOk { .. } => bail!("Recieved generated ok"),
         }
         Ok(())
     }

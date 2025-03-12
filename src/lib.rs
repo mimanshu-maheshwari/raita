@@ -2,6 +2,7 @@ pub mod echo;
 pub mod init;
 pub mod message;
 pub mod state;
+pub mod unique_id;
 
 use init::InitPayload;
 use message::Message;
