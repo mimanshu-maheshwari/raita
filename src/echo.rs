@@ -39,7 +39,7 @@ impl Node<EchoPayload> for Message<EchoPayload> {
                 serde_json::to_writer(&mut *writer, &reply)?;
                 writer.write_all(b"\r")?;
             }
-            EchoPayload::EchoOk { echo, in_reply_to } => {}
+            EchoPayload::EchoOk { .. } => {}
         }
         Ok(())
     }

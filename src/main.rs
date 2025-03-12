@@ -1,3 +1,5 @@
+use raita::{echo::EchoPayload, main_loop};
+
 fn main() -> anyhow::Result<()> {
-    Ok(())
+    main_loop::<EchoPayload>()
 }

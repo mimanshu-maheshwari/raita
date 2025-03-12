@@ -25,7 +25,7 @@ impl Node<InitPayload> for Message<InitPayload> {
         writer: &mut StdoutLock,
     ) -> anyhow::Result<()> {
         match self.body().payload() {
-            InitPayload::Init { node_id, node_ids } => {
+            InitPayload::Init { .. } => {
                 let reply = Message::reply(
                     &self,
                     Body::new(
