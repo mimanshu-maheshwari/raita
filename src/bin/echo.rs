@@ -1,4 +1,4 @@
-use raita::{echo::EchoPayload, main_loop, state::State};
+use raita::{main_loop, EchoPayload, State};
 
 fn main() -> anyhow::Result<()> {
     let state = State::default();

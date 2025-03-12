@@ -1,4 +1,4 @@
-use raita::{main_loop, state::State, unique_id::UniqueIdPayload};
+use raita::{main_loop, State, UniqueIdPayload};
 
 fn main() -> anyhow::Result<()> {
     let state = State::default();

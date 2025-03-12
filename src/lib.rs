@@ -1,14 +1,19 @@
-pub mod echo;
-pub mod init;
-pub mod message;
-pub mod state;
-pub mod unique_id;
+mod broadcast;
+mod echo;
+mod init;
+mod message;
+mod state;
+mod unique_id;
 
 use init::InitPayload;
 use message::Message;
 use serde::de::DeserializeOwned;
-use state::State;
 use std::io::{stdin, stdout, BufRead, BufReader, StdoutLock};
+
+pub use broadcast::BroadcastPayload;
+pub use echo::EchoPayload;
+pub use state::State;
+pub use unique_id::UniqueIdPayload;
 
 pub trait Node<Payload> {
     fn step(&self, writer: &mut StdoutLock, state: &mut State) -> anyhow::Result<()>;
