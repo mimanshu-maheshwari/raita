@@ -1,5 +1,6 @@
-use raita::{echo::EchoPayload, main_loop};
+use raita::{echo::EchoPayload, main_loop, state::State};
 
 fn main() -> anyhow::Result<()> {
-    main_loop::<EchoPayload>()
+    let state = State::default();
+    main_loop::<EchoPayload>(state)
 }

@@ -3,6 +3,7 @@ use std::io::{StdoutLock, Write};
 
 use crate::{
     message::{Body, Message},
+    state::State,
     Node,
 };
 
@@ -23,13 +24,14 @@ impl Node<EchoPayload> for Message<EchoPayload> {
         &self,
         // input: &mut Message<EchoPayload>,
         writer: &mut StdoutLock,
+        state: &mut State,
     ) -> anyhow::Result<()> {
         match self.body().payload() {
             EchoPayload::Echo { echo } => {
                 let reply = Message::reply(
                     self,
                     Body::new(
-                        self.body().message_id(),
+                        Some(state.get_and_increment()),
                         EchoPayload::EchoOk {
                             echo: echo.clone(),
                             in_reply_to: self.body().message_id(),

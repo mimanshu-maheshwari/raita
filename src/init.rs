@@ -4,6 +4,7 @@ use std::io::{StdoutLock, Write};
 
 use crate::{
     message::{Body, Message},
+    state::State,
     Node,
 };
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -23,13 +24,14 @@ impl Node<InitPayload> for Message<InitPayload> {
         &self,
         // input: &mut Message<InitPayload>,
         writer: &mut StdoutLock,
+        state: &mut State,
     ) -> anyhow::Result<()> {
         match self.body().payload() {
             InitPayload::Init { .. } => {
                 let reply = Message::reply(
                     self,
                     Body::new(
-                        self.body().message_id(),
+                        Some(state.get_and_increment()),
                         InitPayload::InitOk {
                             in_reply_to: self.body().message_id(),
                         },
