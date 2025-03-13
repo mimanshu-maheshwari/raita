@@ -5,14 +5,14 @@ mod message;
 mod state;
 mod unique_id;
 
-use anyhow::Context;
+use anyhow::{Context, Result};
 use init::InitPayload;
 use message::Message;
 use serde::{de::DeserializeOwned, Serialize};
 use std::{
     io::{stdin, stdout, BufRead, BufReader, Write},
-    sync::mpsc,
-    thread,
+    sync::mpsc::{self, Sender},
+    thread::{self, JoinHandle},
 };
 
 pub use broadcast::BroadcastPayload;
@@ -51,7 +51,27 @@ where
 
     // thread for stdin
     let stdin_tx = tx.clone();
-    let stdin_handler = thread::spawn(move || {
+    let stdin_handler = stdin_handler(stdin_tx);
+
+    for message in rx {
+        message.step(&mut stdout, &mut state)?;
+    }
+
+    stdin_handler
+        .join()
+        .expect("Stdin thread panicked")
+        .context("stdin thread err")?;
+    Ok(())
+}
+
+fn stdin_handler<Payload>(
+    stdin_tx: Sender<Message<Payload>>,
+) -> JoinHandle<Result<(), anyhow::Error>>
+where
+    Payload: Sized + DeserializeOwned + Serialize + Send + 'static,
+    Message<Payload>: Node<Payload>,
+{
+    thread::spawn(move || {
         let stdin = std::io::stdin().lock();
         let mut input_buffer = String::new();
         let mut reader = BufReader::new(stdin);
@@ -68,15 +88,5 @@ where
             input_buffer.clear();
         }
         Ok::<(), anyhow::Error>(())
-    });
-
-    for message in rx {
-        message.step(&mut stdout, &mut state)?;
-    }
-
-    stdin_handler
-        .join()
-        .expect("Stdin thread panicked")
-        .context("stdin thread err")?;
-    Ok(())
+    })
 }
