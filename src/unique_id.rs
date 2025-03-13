@@ -1,8 +1,7 @@
+use crate::{message::Message, state::State, Node};
 use anyhow::bail;
 use serde::{Deserialize, Serialize};
-use std::io::StdoutLock;
-
-use crate::{message::Message, state::State, Node};
+use std::io::Write;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
@@ -12,7 +11,7 @@ pub enum UniqueIdPayload {
 }
 
 impl Node<UniqueIdPayload> for Message<UniqueIdPayload> {
-    fn step(&self, writer: &mut StdoutLock, state: &mut State) -> anyhow::Result<()> {
+    fn step(&self, writer: &mut impl Write, state: &mut State) -> anyhow::Result<()> {
         match self.body.payload {
             UniqueIdPayload::Generate => {
                 Message::reply(

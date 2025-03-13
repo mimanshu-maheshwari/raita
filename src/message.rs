@@ -1,8 +1,6 @@
-use std::io::{StdoutLock, Write};
-
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
-
 use crate::State;
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use std::io::Write;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Message<Payload> {
@@ -39,7 +37,7 @@ where
         }
     }
     #[inline(always)]
-    pub fn write(&self, writer: &mut StdoutLock) -> anyhow::Result<()> {
+    pub fn write(&self, writer: &mut impl Write) -> anyhow::Result<()> {
         serde_json::to_writer(&mut *writer, self)?;
         writer.write_all(b"\r")?;
         writer.flush()?;

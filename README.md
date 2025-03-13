@@ -1,5 +1,7 @@
 # Raita: [`Fly.io`](https://fly.io/dist-sys) distributed challenge based on Maelstrom server
 
+> "यह क्या रायता फैलाया है?"
+
 ## Related Links
 
 - <https://fly.io/dist-sys/>

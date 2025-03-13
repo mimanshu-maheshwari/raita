@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{HashMap, HashSet},
-    io::StdoutLock,
+    io::Write,
 };
 
 use crate::{message::Message, state::State, Node};
@@ -23,7 +23,7 @@ pub enum BroadcastPayload {
 }
 
 impl Node<BroadcastPayload> for Message<BroadcastPayload> {
-    fn step(&self, writer: &mut StdoutLock, state: &mut State) -> anyhow::Result<()> {
+    fn step(&self, writer: &mut impl Write, state: &mut State) -> anyhow::Result<()> {
         match &self.body.payload {
             BroadcastPayload::Broadcast { message } => {
                 state.add_message(*message);

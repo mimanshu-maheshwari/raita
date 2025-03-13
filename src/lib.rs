@@ -8,7 +8,7 @@ mod unique_id;
 use init::InitPayload;
 use message::Message;
 use serde::{de::DeserializeOwned, Serialize};
-use std::io::{stdin, stdout, BufRead, BufReader, StdoutLock};
+use std::io::{stdin, stdout, BufRead, BufReader, Write};
 
 pub use broadcast::BroadcastPayload;
 pub use echo::EchoPayload;
@@ -19,7 +19,7 @@ pub trait Node<Payload>
 where
     Payload: DeserializeOwned + Serialize,
 {
-    fn step(&self, writer: &mut StdoutLock, state: &mut State) -> anyhow::Result<()>;
+    fn step(&self, writer: &mut impl Write, state: &mut State) -> anyhow::Result<()>;
 }
 
 #[inline(always)]
@@ -30,11 +30,15 @@ where
 {
     let stdin = stdin().lock();
     let mut stdout = stdout().lock();
+
     let mut input_buffer = String::new();
     let mut reader = BufReader::new(stdin);
+
     reader.read_line(&mut input_buffer)?;
     let init_message: Message<InitPayload> = serde_json::from_str(&input_buffer)?;
     init_message.step(&mut stdout, &mut state)?;
+    drop(init_message);
+
     input_buffer.clear();
     while let Ok(bytes) = reader.read_line(&mut input_buffer) {
         if bytes == 0 {
@@ -42,6 +46,7 @@ where
         }
         let message: Message<Payload> = serde_json::from_str(&input_buffer)?;
         message.step(&mut stdout, &mut state)?;
+        drop(message);
         input_buffer.clear();
     }
     Ok(())
