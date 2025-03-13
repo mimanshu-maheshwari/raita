@@ -5,6 +5,7 @@ mod message;
 mod state;
 mod unique_id;
 
+use anyhow::Context;
 use init::InitPayload;
 use message::Message;
 use serde::{de::DeserializeOwned, Serialize};
@@ -50,7 +51,7 @@ where
 
     // thread for stdin
     let stdin_tx = tx.clone();
-    thread::spawn(move || {
+    let stdin_handler = thread::spawn(move || {
         let stdin = std::io::stdin().lock();
         let mut input_buffer = String::new();
         let mut reader = BufReader::new(stdin);
@@ -72,5 +73,10 @@ where
     for message in rx {
         message.step(&mut stdout, &mut state)?;
     }
+
+    stdin_handler
+        .join()
+        .expect("Stdin thread panicked")
+        .context("stdin thread err")?;
     Ok(())
 }
