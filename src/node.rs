@@ -30,6 +30,9 @@ where
 
     reader.read_line(&mut input_buffer)?;
     let init_message: Message<InitPayload> = serde_json::from_str(&input_buffer)?;
+
+    // we'll start gossiping when we get init message.
+    // we can implement raft concensus algorithm as well only the two phase commit part.
     init_message.step(&mut stdout, &mut state)?;
 
     drop(init_message);
