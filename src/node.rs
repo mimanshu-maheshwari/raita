@@ -1,13 +1,14 @@
-use crate::{InitPayload, Message, State};
+use crate::{message::Event, InitPayload, Message, State};
 use anyhow::{Context, Result};
 use serde::{de::DeserializeOwned, Serialize};
 use std::{
     io::{stdin, stdout, BufRead, BufReader, Write},
     sync::mpsc::{self, Sender},
     thread::{self, JoinHandle},
+    time::Duration,
 };
 
-pub trait Node<Payload>
+pub trait Node<Payload, GeneratedPayload = ()>
 where
     Payload: DeserializeOwned + Serialize,
 {
@@ -15,10 +16,11 @@ where
 }
 
 #[inline(always)]
-pub fn start<Payload>(mut state: State) -> anyhow::Result<()>
+pub fn start<Payload, GeneratedPayload>(mut state: State) -> anyhow::Result<()>
 where
     Payload: Sized + DeserializeOwned + Serialize + Send + 'static,
-    Message<Payload>: Node<Payload>,
+    GeneratedPayload: Sized + Send + 'static,
+    Event<Payload, GeneratedPayload>: Node<Payload, GeneratedPayload>,
 {
     let (tx, rx) = mpsc::channel();
 
@@ -34,6 +36,9 @@ where
     // we'll start gossiping when we get init message.
     // we can implement raft concensus algorithm as well only the two phase commit part.
     init_message.step(&mut stdout, &mut state)?;
+
+    let interval_tx = tx.clone();
+    let _interval_handler = interval_event_generator(interval_tx);
 
     drop(init_message);
     drop(input_buffer);
@@ -54,12 +59,32 @@ where
     Ok(())
 }
 
-fn stdin_handler<Payload>(
-    stdin_tx: Sender<Message<Payload>>,
+fn interval_event_generator<Payload, GeneratedPayload>(
+    tx: Sender<Event<Payload, GeneratedPayload>>,
 ) -> JoinHandle<Result<(), anyhow::Error>>
 where
     Payload: Sized + DeserializeOwned + Serialize + Send + 'static,
-    Message<Payload>: Node<Payload>,
+    GeneratedPayload: Sized + Send + 'static,
+    Event<Payload, GeneratedPayload>: Node<Payload, GeneratedPayload>,
+{
+    thread::spawn(move || {
+        loop {
+            thread::sleep(Duration::from_millis(300));
+            if tx.send(Event::EndOfFile).is_err() {
+                break;
+            }
+        }
+        Ok::<(), anyhow::Error>(())
+    })
+}
+
+fn stdin_handler<Payload, GeneratedPayload>(
+    stdin_tx: Sender<Event<Payload, GeneratedPayload>>,
+) -> JoinHandle<Result<(), anyhow::Error>>
+where
+    Payload: Sized + DeserializeOwned + Serialize + Send + 'static,
+    GeneratedPayload: Sized + Send + 'static,
+    Event<Payload, GeneratedPayload>: Node<Payload, GeneratedPayload>,
 {
     thread::spawn(move || {
         let stdin = std::io::stdin().lock();
@@ -72,11 +97,14 @@ where
                 break;
             }
             let message: Message<Payload> = serde_json::from_str(&input_buffer)?;
-            if stdin_tx.send(message).is_err() {
+            if stdin_tx.send(Event::ReceivedMessage(message)).is_err() {
                 return Ok::<_, anyhow::Error>(());
             }
             input_buffer.clear();
         }
+        stdin_tx
+            .send(Event::EndOfFile)
+            .expect("Failed to send EOF event.");
         Ok::<(), anyhow::Error>(())
     })
 }

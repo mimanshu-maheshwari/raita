@@ -2,6 +2,13 @@ use crate::State;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::io::Write;
 
+#[derive(Debug, Clone)]
+pub enum Event<Payload, GenerationPayload = ()> {
+    ReceivedMessage(Message<Payload>),
+    GeneratedMessage(Message<GenerationPayload>),
+    EndOfFile,
+}
+
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Message<Payload> {
     #[serde(rename = "src")]

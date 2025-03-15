@@ -1,6 +1,6 @@
-use raita::{node, BroadcastPayload, State};
+use raita::{node, BroadcastPayload, GeneratedPayload, State};
 
 fn main() -> anyhow::Result<()> {
     let state = State::default();
-    node::start::<BroadcastPayload>(state)
+    node::start::<BroadcastPayload, GeneratedPayload>(state)
 }
