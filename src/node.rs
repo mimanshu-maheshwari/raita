@@ -68,7 +68,7 @@ where
 {
     thread::spawn(move || {
         loop {
-            thread::sleep(Duration::from_millis(300));
+            thread::sleep(Duration::from_millis(100));
             if interval_tx.send(Event::GeneratedMessage).is_err() {
                 break;
             }
