@@ -23,6 +23,8 @@ impl Node<InitPayload> for Message<InitPayload> {
             InitPayload::Init { node_id, node_ids } => {
                 state.node_id = node_id.clone();
                 state.declared_nodes = node_ids.clone();
+                state.update_neighborhood();
+                state.create_known(node_ids);
                 Message::reply(state, self, InitPayload::InitOk).write(writer)?;
             }
             InitPayload::InitOk => bail!("Unexpected message Init Ok"),

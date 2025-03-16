@@ -1,5 +1,5 @@
 use crate::{
-    message::{Event, Message},
+    message::{Body, Event, Message},
     state::State,
     Node,
 };
@@ -19,16 +19,13 @@ pub enum BroadcastPayload {
     BroadcastOk,
     Read,
     ReadOk {
-        messages: Vec<u32>,
+        messages: HashSet<u32>,
     },
     Topology {
         topology: HashMap<String, HashSet<String>>,
     },
     TopologyOk,
     Gossip {
-        messages: HashSet<u32>,
-    },
-    GossipOk {
         messages: HashSet<u32>,
     },
 }
@@ -61,8 +58,7 @@ impl Node<BroadcastPayload> for Message<BroadcastPayload> {
                 let reply = Message::reply(state, self, BroadcastPayload::TopologyOk);
                 reply.write(writer)?;
             }
-            BroadcastPayload::Gossip { messages: _ } => todo!(),
-            BroadcastPayload::GossipOk { messages: _ } => todo!(),
+            BroadcastPayload::Gossip { messages: _ } => unimplemented!(),
             BroadcastPayload::BroadcastOk
             | BroadcastPayload::ReadOk { .. }
             | BroadcastPayload::TopologyOk => {}
@@ -76,7 +72,30 @@ impl Node<BroadcastPayload, GeneratedPayload> for Event<BroadcastPayload, Genera
         match self {
             Event::EndOfFile => bail!("Unexpected message EOF"),
             Event::GeneratedMessage(message) => match message.body.payload {
-                GeneratedPayload::Gossip => {}
+                GeneratedPayload::Gossip => {
+                    for n in state.neighborhood.iter() {
+                        let message_id = state.message_track_id;
+                        state.message_track_id += 1;
+                        let known_to_n = &state.known[n];
+                        Message::new(
+                            state.node_id.clone(),
+                            n.clone(),
+                            Body::new(
+                                Some(message_id),
+                                BroadcastPayload::Gossip {
+                                    messages: state
+                                        .messages
+                                        .iter()
+                                        .copied()
+                                        .filter(|m| !known_to_n.contains(m))
+                                        .collect(),
+                                },
+                                None,
+                            ),
+                        )
+                        .write(writer)?;
+                    }
+                }
             },
             Event::ReceivedMessage(received_message) => match &received_message.body.payload {
                 BroadcastPayload::Broadcast { message } => {
@@ -102,8 +121,7 @@ impl Node<BroadcastPayload, GeneratedPayload> for Event<BroadcastPayload, Genera
                     reply.write(writer)?;
                 }
 
-                BroadcastPayload::Gossip { messages: _ } => todo!(),
-                BroadcastPayload::GossipOk { messages: _ } => todo!(),
+                BroadcastPayload::Gossip { messages: _ } => {}
                 BroadcastPayload::BroadcastOk
                 | BroadcastPayload::ReadOk { .. }
                 | BroadcastPayload::TopologyOk => {}
