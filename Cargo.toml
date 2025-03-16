@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.97"
+rand = { version = "0.9.0" }
 serde = { version = "1.0.218", features = ["derive"] }
 serde_json = "1.0.140"
 ulid = { version = "1.2.0", features = ["serde", "std"] }

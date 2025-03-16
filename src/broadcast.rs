@@ -4,6 +4,7 @@ use crate::{
     Node,
 };
 use anyhow::bail;
+use rand::Rng;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{HashMap, HashSet},
@@ -79,22 +80,28 @@ impl Node<BroadcastPayload, GeneratedPayload> for Event<BroadcastPayload, Genera
             Event::EndOfFile => bail!("Unexpected message EOF"),
             Event::GeneratedMessage(message) => match message.body.payload {
                 GeneratedPayload::Gossip => {
+                    let mut rng = rand::rng();
                     for n in state.neighborhood.iter() {
                         let message_id = state.message_track_id;
                         state.message_track_id += 1;
                         let known_to_n = &state.known[n];
+                        let (already_known, mut notify_of): (HashSet<_>, HashSet<_>) = state
+                            .messages
+                            .iter()
+                            .copied()
+                            .partition(|m| known_to_n.contains(m));
+                        notify_of.extend(
+                            already_known
+                                .iter()
+                                .filter(|_| rng.random_ratio(10, already_known.len() as u32)),
+                        );
                         Message::new(
                             state.node_id.clone(),
                             n.clone(),
                             Body::new(
                                 Some(message_id),
                                 BroadcastPayload::Gossip {
-                                    messages: state
-                                        .messages
-                                        .iter()
-                                        .copied()
-                                        .filter(|m| !known_to_n.contains(m))
-                                        .collect(),
+                                    messages: notify_of,
                                 },
                                 None,
                             ),
