@@ -90,11 +90,13 @@ impl Node<BroadcastPayload, GeneratedPayload> for Event<BroadcastPayload, Genera
                             .iter()
                             .copied()
                             .partition(|m| known_to_n.contains(m));
-                        notify_of.extend(
-                            already_known
-                                .iter()
-                                .filter(|_| rng.random_ratio(10, already_known.len() as u32)),
-                        );
+                        let extra = (10 * notify_of.len() / 100) as u32;
+                        notify_of.extend(already_known.iter().filter(|_| {
+                            rng.random_ratio(
+                                extra.min(already_known.len() as u32),
+                                already_known.len() as u32,
+                            )
+                        }));
                         Message::new(
                             state.node_id.clone(),
                             n.clone(),
