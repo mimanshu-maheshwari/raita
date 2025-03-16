@@ -1,4 +1,4 @@
-use crate::{message::Event, InitPayload, Message, State};
+use crate::{message::Event, GeneratedPayload, InitPayload, Message, State};
 use anyhow::{Context, Result};
 use serde::{de::DeserializeOwned, Serialize};
 use std::{
@@ -8,7 +8,7 @@ use std::{
     time::Duration,
 };
 
-pub trait Node<Payload, GeneratedPayload = ()>
+pub trait Node<Payload>
 where
     Payload: DeserializeOwned + Serialize,
 {
@@ -16,11 +16,10 @@ where
 }
 
 #[inline(always)]
-pub fn start<Payload, GeneratedPayload>(mut state: State) -> anyhow::Result<()>
+pub fn start<Payload>(mut state: State) -> anyhow::Result<()>
 where
     Payload: Sized + DeserializeOwned + Serialize + Send + 'static,
-    GeneratedPayload: Sized + Send + 'static,
-    Event<Payload, GeneratedPayload>: Node<Payload, GeneratedPayload>,
+    Event<Payload>: Node<Payload>,
 {
     let (tx, rx) = mpsc::channel();
 
@@ -59,32 +58,30 @@ where
     Ok(())
 }
 
-fn interval_event_generator<Payload, GeneratedPayload>(
-    tx: Sender<Event<Payload, GeneratedPayload>>,
+fn interval_event_generator<Payload>(
+    interval_tx: Sender<Event<Payload>>,
 ) -> JoinHandle<Result<(), anyhow::Error>>
 where
     Payload: Sized + DeserializeOwned + Serialize + Send + 'static,
     GeneratedPayload: Sized + Send + 'static,
-    Event<Payload, GeneratedPayload>: Node<Payload, GeneratedPayload>,
+    Event<Payload>: Node<Payload>,
 {
     thread::spawn(move || {
         loop {
             thread::sleep(Duration::from_millis(300));
-            if tx.send(Event::EndOfFile).is_err() {
+            if interval_tx.send(Event::GeneratedMessage).is_err() {
                 break;
             }
         }
+        let _ = interval_tx.send(Event::EndOfFile);
         Ok::<(), anyhow::Error>(())
     })
 }
 
-fn stdin_handler<Payload, GeneratedPayload>(
-    stdin_tx: Sender<Event<Payload, GeneratedPayload>>,
-) -> JoinHandle<Result<(), anyhow::Error>>
+fn stdin_handler<Payload>(stdin_tx: Sender<Event<Payload>>) -> JoinHandle<Result<(), anyhow::Error>>
 where
     Payload: Sized + DeserializeOwned + Serialize + Send + 'static,
-    GeneratedPayload: Sized + Send + 'static,
-    Event<Payload, GeneratedPayload>: Node<Payload, GeneratedPayload>,
+    Event<Payload>: Node<Payload>,
 {
     thread::spawn(move || {
         let stdin = std::io::stdin().lock();

@@ -3,9 +3,9 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::io::Write;
 
 #[derive(Debug, Clone)]
-pub enum Event<Payload, GenerationPayload = ()> {
+pub enum Event<Payload> {
     ReceivedMessage(Message<Payload>),
-    GeneratedMessage(Message<GenerationPayload>),
+    GeneratedMessage,
     EndOfFile,
 }
 

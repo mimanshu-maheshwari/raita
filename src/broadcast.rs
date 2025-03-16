@@ -3,7 +3,6 @@ use crate::{
     state::State,
     Node,
 };
-use anyhow::bail;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -60,6 +59,7 @@ impl Node<BroadcastPayload> for Message<BroadcastPayload> {
                 reply.write(writer)?;
             }
             BroadcastPayload::Gossip { messages } => {
+                state.messages.extend(messages.iter());
                 state
                     .known
                     .entry(self.source.clone())
@@ -74,44 +74,42 @@ impl Node<BroadcastPayload> for Message<BroadcastPayload> {
     }
 }
 
-impl Node<BroadcastPayload, GeneratedPayload> for Event<BroadcastPayload, GeneratedPayload> {
+impl Node<BroadcastPayload> for Event<BroadcastPayload> {
     fn step(&self, writer: &mut impl Write, state: &mut State) -> anyhow::Result<()> {
         match self {
-            Event::EndOfFile => bail!("Unexpected message EOF"),
-            Event::GeneratedMessage(message) => match message.body.payload {
-                GeneratedPayload::Gossip => {
-                    let mut rng = rand::rng();
-                    for n in state.neighborhood.iter() {
-                        let message_id = state.message_track_id;
-                        state.message_track_id += 1;
-                        let known_to_n = &state.known[n];
-                        let (already_known, mut notify_of): (HashSet<_>, HashSet<_>) = state
-                            .messages
-                            .iter()
-                            .copied()
-                            .partition(|m| known_to_n.contains(m));
-                        let extra = (10 * notify_of.len() / 100) as u32;
-                        notify_of.extend(already_known.iter().filter(|_| {
-                            rng.random_ratio(
-                                extra.min(already_known.len() as u32),
-                                already_known.len() as u32,
-                            )
-                        }));
-                        Message::new(
-                            state.node_id.clone(),
-                            n.clone(),
-                            Body::new(
-                                Some(message_id),
-                                BroadcastPayload::Gossip {
-                                    messages: notify_of,
-                                },
-                                None,
-                            ),
+            Event::EndOfFile => {}
+            Event::GeneratedMessage => {
+                let mut rng = rand::rng();
+                for n in state.neighborhood.iter() {
+                    let message_id = state.message_track_id;
+                    state.message_track_id += 1;
+                    let known_to_n = &state.known[n];
+                    let (already_known, mut notify_of): (HashSet<_>, HashSet<_>) = state
+                        .messages
+                        .iter()
+                        .copied()
+                        .partition(|m| known_to_n.contains(m));
+                    let extra = (10 * notify_of.len() / 100) as u32;
+                    notify_of.extend(already_known.iter().filter(|_| {
+                        rng.random_ratio(
+                            extra.min(already_known.len() as u32),
+                            already_known.len() as u32,
                         )
-                        .write(writer)?;
-                    }
+                    }));
+                    Message::new(
+                        state.node_id.clone(),
+                        n.clone(),
+                        Body::new(
+                            Some(message_id),
+                            BroadcastPayload::Gossip {
+                                messages: notify_of,
+                            },
+                            None,
+                        ),
+                    )
+                    .write(writer)?;
                 }
-            },
+            }
             Event::ReceivedMessage(received_message) => match &received_message.body.payload {
                 BroadcastPayload::Broadcast { message } => {
                     state.add_message(*message);
@@ -136,6 +134,7 @@ impl Node<BroadcastPayload, GeneratedPayload> for Event<BroadcastPayload, Genera
                     reply.write(writer)?;
                 }
                 BroadcastPayload::Gossip { messages } => {
+                    state.messages.extend(messages.iter());
                     state
                         .known
                         .entry(received_message.source.clone())

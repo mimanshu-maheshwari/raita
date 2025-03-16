@@ -31,27 +31,26 @@ impl Node<UniqueIdPayload> for Message<UniqueIdPayload> {
         Ok(())
     }
 }
+
 impl Node<UniqueIdPayload> for Event<UniqueIdPayload> {
     fn step(&self, writer: &mut impl Write, state: &mut State) -> anyhow::Result<()> {
         match self {
             Event::EndOfFile => bail!("Unexpected message EOF"),
-            Event::GeneratedMessage(message) => bail!("Unexpected message {message:?}"),
-            Event::ReceivedMessage(message) => {
-                match &message.body.payload {
-                    UniqueIdPayload::Generate => {
-                        Message::reply(
-                            state,
-                            message,
-                            UniqueIdPayload::GenerateOk {
-                                id: ulid::Ulid::new(),
-                            },
-                        )
-                        .write(writer)?;
-                    }
-                    UniqueIdPayload::GenerateOk { .. } => bail!("Recieved generated ok"),
+            Event::GeneratedMessage => {}
+            Event::ReceivedMessage(message) => match &message.body.payload {
+                UniqueIdPayload::Generate => {
+                    Message::reply(
+                        state,
+                        message,
+                        UniqueIdPayload::GenerateOk {
+                            id: ulid::Ulid::new(),
+                        },
+                    )
+                    .write(writer)?;
                 }
-                Ok(())
-            }
+                UniqueIdPayload::GenerateOk { .. } => bail!("Recieved generated ok"),
+            },
         }
+        Ok(())
     }
 }
