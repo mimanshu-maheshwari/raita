@@ -58,7 +58,13 @@ impl Node<BroadcastPayload> for Message<BroadcastPayload> {
                 let reply = Message::reply(state, self, BroadcastPayload::TopologyOk);
                 reply.write(writer)?;
             }
-            BroadcastPayload::Gossip { messages: _ } => unimplemented!(),
+            BroadcastPayload::Gossip { messages } => {
+                state
+                    .known
+                    .entry(self.source.clone())
+                    .and_modify(|values| values.extend(messages.iter()))
+                    .or_insert(messages.iter().copied().collect());
+            }
             BroadcastPayload::BroadcastOk
             | BroadcastPayload::ReadOk { .. }
             | BroadcastPayload::TopologyOk => {}
@@ -120,8 +126,13 @@ impl Node<BroadcastPayload, GeneratedPayload> for Event<BroadcastPayload, Genera
                         Message::reply(state, received_message, BroadcastPayload::TopologyOk);
                     reply.write(writer)?;
                 }
-
-                BroadcastPayload::Gossip { messages: _ } => {}
+                BroadcastPayload::Gossip { messages } => {
+                    state
+                        .known
+                        .entry(received_message.source.clone())
+                        .and_modify(|values| values.extend(messages.iter()))
+                        .or_insert(messages.iter().copied().collect());
+                }
                 BroadcastPayload::BroadcastOk
                 | BroadcastPayload::ReadOk { .. }
                 | BroadcastPayload::TopologyOk => {}
