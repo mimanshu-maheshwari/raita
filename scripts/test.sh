@@ -95,6 +95,16 @@ run_broadcast_strict() {
     --topology tree
 }
 
+run_g_counter() {
+  "$MAELSTROM_BIN" test \
+    -w g-counter \
+    --bin "$(bin_path g_counter)" \
+    --node-count 3 \
+    --rate 100 \
+    --time-limit 20 \
+    --nemesis partition
+}
+
 main() {
   local target="${1:-all}"
   build
@@ -112,14 +122,18 @@ main() {
     broadcast|broadcast-strict)
       run_workload "broadcast" run_broadcast_strict
       ;;
+    g-counter)
+      run_workload "g-counter" run_g_counter
+      ;;
     all)
       run_workload "echo" run_echo
       run_workload "unique-ids" run_unique_ids
       run_workload "broadcast-basic" run_broadcast_basic
       run_workload "broadcast" run_broadcast_strict
+      run_workload "g-counter" run_g_counter
       ;;
     *)
-      echo "Usage: $0 [echo|unique-ids|broadcast-basic|broadcast|all]" >&2
+      echo "Usage: $0 [echo|unique-ids|broadcast-basic|broadcast|g-counter|all]" >&2
       exit 1
       ;;
   esac

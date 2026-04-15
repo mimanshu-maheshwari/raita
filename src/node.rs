@@ -8,18 +8,30 @@ use std::{
     time::Duration,
 };
 
-pub trait Node<Payload>
+pub trait HasCommonState {
+    fn state(&mut self) -> &mut State;
+}
+
+impl HasCommonState for State {
+    fn state(&mut self) -> &mut State {
+        self
+    }
+}
+
+pub trait Node<Payload, S = State>
 where
     Payload: DeserializeOwned + Serialize,
 {
-    fn step(&self, writer: &mut impl Write, state: &mut State) -> anyhow::Result<()>;
+    fn step(&self, writer: &mut impl Write, state: &mut S) -> anyhow::Result<()>;
 }
 
 #[inline(always)]
-pub fn start<Payload>(mut state: State) -> anyhow::Result<()>
+pub fn start<Payload, S>(mut state: S) -> anyhow::Result<()>
 where
+    S: HasCommonState,
     Payload: Sized + DeserializeOwned + Serialize + Send + 'static,
-    Event<Payload>: Node<Payload>,
+    Event<Payload>: Node<Payload, S>,
+    Message<InitPayload>: Node<InitPayload, S>,
 {
     let (tx, rx) = mpsc::channel();
 
@@ -64,7 +76,6 @@ fn interval_event_generator<Payload>(
 where
     Payload: Sized + DeserializeOwned + Serialize + Send + 'static,
     GeneratedPayload: Sized + Send + 'static,
-    Event<Payload>: Node<Payload>,
 {
     thread::spawn(move || {
         loop {
@@ -81,7 +92,6 @@ where
 fn stdin_handler<Payload>(stdin_tx: Sender<Event<Payload>>) -> JoinHandle<Result<(), anyhow::Error>>
 where
     Payload: Sized + DeserializeOwned + Serialize + Send + 'static,
-    Event<Payload>: Node<Payload>,
 {
     thread::spawn(move || {
         let stdin = std::io::stdin().lock();

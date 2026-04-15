@@ -13,6 +13,7 @@ This repository is intentionally not a polished framework. Each workload lives a
 | Echo | `src/bin/echo.rs` | Done | Minimal request/reply implementation. |
 | Unique IDs | `src/bin/unique_id.rs` | Done | Generates unique ULIDs per request. |
 | Broadcast | `src/bin/broadcast.rs` | Done | Uses deterministic gossip plus per-neighbor knowledge tracking to reduce stale reads. |
+| Grow-Only Counter | `src/bin/g_counter.rs` | In progress | Uses `seq-kv` with one shard key per node and sums shards on reads. |
 | Later Maelstrom workloads | N/A | Not started | Left for future iterations. |
 
 ## Repository shape
@@ -20,6 +21,7 @@ This repository is intentionally not a polished framework. Each workload lives a
 - `src/bin/echo.rs`: first challenge step, kept simple on purpose.
 - `src/bin/unique_id.rs`: second step, still small and close to the protocol.
 - `src/bin/broadcast.rs`: third step, where more state management and gossip logic shows up.
+- `src/bin/g_counter.rs`: fourth step, built on Maelstrom's `seq-kv` service.
 - `src/message.rs`: shared message envelope and reply helpers.
 - `src/state.rs`: shared node state, topology, local message set, and per-neighbor gossip bookkeeping.
 - `src/node.rs`: runtime loop for reading stdin, writing stdout, and generating periodic events.
@@ -62,6 +64,17 @@ The current version:
 
 That last point is the important fix. Earlier versions relied on randomized gossip, which made the code harder to reason about and could still leave short stale-read windows. The current implementation is deterministic: if a neighbor is missing a value, we send it; once we send it, we record that knowledge locally.
 
+### 4. Grow-Only Counter
+
+This step switches away from direct node-to-node replication and starts using a Maelstrom-provided service:
+
+- each node stores its own shard in `seq-kv`
+- `add` reads and compare-and-swaps only the local shard key
+- `read` sums all node shard keys to reconstruct the global counter
+- CAS retries handle concurrent updates safely
+
+This keeps the node itself stateless with respect to the counter value and matches the challenge's intent of building on the provided key/value service.
+
 ## Running the code
 
 ### Prerequisites
@@ -94,6 +107,7 @@ Run individual steps:
 ./scripts/test.sh unique-ids
 ./scripts/test.sh broadcast-basic
 ./scripts/test.sh broadcast
+./scripts/test.sh g-counter
 ```
 
 The script uses:
@@ -102,6 +116,7 @@ The script uses:
 - `unique-ids`: partitioned availability run
 - `broadcast-basic`: smaller broadcast run
 - `broadcast`: stricter broadcast run with more nodes and higher rate
+- `g-counter`: grow-only counter against `seq-kv` with partitions
 
 ## Notes on verification
 
@@ -111,6 +126,7 @@ Rust-side tests currently cover:
 - neighborhood/topology bookkeeping
 - "unknown message" calculation per neighbor
 - broadcast fanout and gossip forwarding behavior
+- grow-only counter request sequencing, CAS retry behavior, and shard aggregation
 
 Saved Maelstrom artifacts live in `store/` from earlier runs and are useful as a diary of what passed, what regressed, and what got better over time.
 
@@ -119,6 +135,7 @@ Saved Maelstrom artifacts live in `store/` from earlier runs and are useful as a
 - I kept the workload binaries separate even where the logic overlaps, because readability of the learning path matters more here than maximal deduplication.
 - Shared helpers only cover boring plumbing like message envelopes, state bookkeeping, and the runtime loop.
 - `broadcast` now favors deterministic propagation over randomized resend, because it is easier to reason about and easier to test.
+- `g-counter` is implemented with one key per node in `seq-kv`, which keeps writes local and makes reads a simple sum across shards.
 
 ## What remains
 
