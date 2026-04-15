@@ -74,3 +74,36 @@ where
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{Body, Message};
+    use crate::State;
+    use serde::{Deserialize, Serialize};
+
+    #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
+    #[serde(tag = "type", rename_all = "snake_case")]
+    enum TestPayload {
+        Ping,
+        Pong { value: u32 },
+    }
+
+    #[test]
+    fn reply_reuses_request_message_id_and_increments_state_counter() {
+        let request = Message::new(
+            "client".to_owned(),
+            "node-a".to_owned(),
+            Body::new(Some(7), TestPayload::Ping, None),
+        );
+        let mut state = State::default();
+
+        let reply = Message::reply(&mut state, &request, TestPayload::Pong { value: 99 });
+
+        assert_eq!(reply.source, "node-a");
+        assert_eq!(reply.destination, "client");
+        assert_eq!(reply.body.message_id, Some(0));
+        assert_eq!(reply.body.in_reply_to, Some(7));
+        assert_eq!(reply.body.payload, TestPayload::Pong { value: 99 });
+        assert_eq!(state.message_track_id, 1);
+    }
+}
